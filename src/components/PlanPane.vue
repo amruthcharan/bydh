@@ -42,8 +42,8 @@ watch(() => ui.calib, async (c) => { if (c) { calibLen.value = ''; calibUnit.val
 const hint = computed(() => {
   switch (ui.tool) {
     case 'select': return 'Drag to move · drag a wall end to reshape · drag empty space to pan';
-    case 'wall': return drafting.value ? 'Click the next corner · double-click or Esc to finish' : `Click to start a wall · corners snap to the ${units.value === 'ft' ? '9¾″ (25 cm)' : '25 cm'} grid`;
-    case 'room': return 'Drag a rectangle to add a room with its four walls';
+    case 'wall': return drafting.value ? 'Click the next corner · double-click or Esc to finish' : 'Click to start a wall · corners snap to the grid · zoom in for a finer grid';
+    case 'room': return 'Drag a rectangle to add a room with its four walls · zoom in for a finer grid';
     case 'door': return 'Click a wall to add a door';
     case 'window': return 'Click a wall to add a window';
     case 'erase': return 'Click anything to delete it';

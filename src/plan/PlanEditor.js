@@ -3,6 +3,7 @@ import { bbox, clamp, connectedEnds, distToSeg, inRotRect, snapTo, wallLen } fro
 import { wallSnap } from '../lib/snapping.js';
 import { walker } from '../lib/walker.js';
 import { drawPlan, readTokens } from './drawPlan.js';
+import { gridFor } from './grid.js';
 
 /**
  * 2D floor-plan editor on a <canvas>. Owns the view transform and the
@@ -123,13 +124,16 @@ export class PlanEditor {
     if (u && u.visible && !u.locked && inRotRect(x, y, u.x, u.y, u.w * u.mpp, u.h * u.mpp, u.rot)) return { kind: 'underlay', id: 'underlay' };
     return null;
   }
+  /** Snap step for corners, rooms and wall moves at this zoom (see gridFor). */
+  gridStep() { return gridFor(this.view.s, this.store.plan.settings.units).snap; }
   snapPoint(x, y, from) {
-    let best = null; const er = Math.max(0.3, 12 / this.view.s);
+    // Wall ends attract within 12 px on screen, so zooming in gives finer control.
+    let best = null; const er = 12 / this.view.s, g = this.gridStep();
     for (const w of this.store.plan.walls) for (const q of [[w.x1, w.y1], [w.x2, w.y2]]) {
       const d = Math.hypot(x - q[0], y - q[1]); if (d < er && (!best || d < best.d)) best = { x: q[0], y: q[1], d };
     }
     if (best) return { x: best.x, y: best.y, snapped: true };
-    let sx = snapTo(x, 0.25), sy = snapTo(y, 0.25);
+    let sx = snapTo(x, g), sy = snapTo(y, g);
     if (from) { const dx = sx - from.x, dy = sy - from.y; if (Math.abs(dy) < Math.abs(dx) * 0.14) sy = from.y; else if (Math.abs(dx) < Math.abs(dy) * 0.14) sx = from.x; }
     return { x: sx, y: sy, snapped: false };
   }
@@ -253,7 +257,7 @@ export class PlanEditor {
       const nx = free ? d.orig.x + dx : snapTo(d.orig.x + dx, 0.05), ny = free ? d.orig.y + dy : snapTo(d.orig.y + dy, 0.05);
       const s = noSnap ? null : wallSnap(this.store.plan, SKU[o.sku], nx, ny);
       if (s) { o.x = s.x; o.y = s.y; o.rot = s.rot; } else { o.x = nx; o.y = ny; }
-    } else if (d.kind === 'room') { o.x = snapTo(d.orig.x + dx, 0.25); o.y = snapTo(d.orig.y + dy, 0.25); }
+    } else if (d.kind === 'room') { const g = this.gridStep(); o.x = snapTo(d.orig.x + dx, g); o.y = snapTo(d.orig.y + dy, g); }
     else if (d.kind === 'underlay') { o.x = d.orig.x + dx; o.y = d.orig.y + dy; }
     else if (d.kind === 'opening') {
       const w = this.store.wallById(o.wall), L = wallLen(w), h = distToSeg(wx, wy, w.x1, w.y1, w.x2, w.y2), half = o.w / 2 / L;
@@ -266,7 +270,7 @@ export class PlanEditor {
         o['x' + d.end] = q.x; o['y' + d.end] = q.y;
         links.forEach(([w, k]) => { w['x' + k] = q.x; w['y' + k] = q.y; });
       } else {
-        const sdx = snapTo(dx, 0.25), sdy = snapTo(dy, 0.25);
+        const g = this.gridStep(), sdx = snapTo(dx, g), sdy = snapTo(dy, g);
         o.x1 = d.orig.x1 + sdx; o.y1 = d.orig.y1 + sdy; o.x2 = d.orig.x2 + sdx; o.y2 = d.orig.y2 + sdy;
         d.links1.forEach(([w, k]) => { w['x' + k] = o.x1; w['y' + k] = o.y1; });
         d.links2.forEach(([w, k]) => { w['x' + k] = o.x2; w['y' + k] = o.y2; });

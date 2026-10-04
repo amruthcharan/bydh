@@ -36,6 +36,7 @@ Vue 3 (`<script setup>`, plain JS, no TypeScript), Pinia, three.js r186 (OrbitCo
 - Keep files small and grouped by concern, matching the existing folders.
 
 ## Gotchas
+- The plan grid adapts to zoom and units (`gridFor` in `src/plan/grid.js`). Wall corners, room drags and wall moves snap to its `snap` step, so what you see is what you snap to. Furniture and openings keep a fixed 5 cm snap.
 - `PlanEditor.hitTest` sorts furniture so wall-mounted items (`elev > 0`) are hit before floor items under them.
 - Room creation adds four walls but skips any edge that an existing collinear wall already covers (`wallCovers`).
 - The tracing image (`plan.underlay`) is stored as a JPEG data URL inside the plan, which is why autosave uses IndexedDB rather than localStorage. Large images make plan files big.

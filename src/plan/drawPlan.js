@@ -2,6 +2,7 @@ import { SKU, FLOORS } from '../catalog/items.js';
 import { clamp, wallLen, rad } from '../lib/geometry.js';
 import { fmtArea, fmtLen } from '../lib/units.js';
 import { walker } from '../lib/walker.js';
+import { gridFor } from './grid.js';
 
 /** Read the CSS colour tokens so the canvas follows the light/dark theme. */
 export function readTokens() {
@@ -37,12 +38,12 @@ export function drawPlan(ed) {
 
   // Grid
   const [gx0, gy0] = ed.s2w(0, 0), [gx1, gy1] = ed.s2w(W, H);
-  const minor = s > 55 ? 0.25 : s > 22 ? 0.5 : 1, major = s > 14 ? 1 : 5;
+  const { minor, major } = gridFor(s, units);
   ctx.lineWidth = 1;
   for (const [step, col] of [[minor, tk.grid], [major, tk['grid-major']]]) {
     ctx.strokeStyle = col; ctx.globalAlpha = u && u.visible ? 0.55 : 1; ctx.beginPath();
-    for (let x = Math.floor(gx0 / step) * step; x <= gx1; x += step) { const sx = Math.round(x * s + ed.view.ox) + 0.5; ctx.moveTo(sx, 0); ctx.lineTo(sx, H); }
-    for (let y = Math.floor(gy0 / step) * step; y <= gy1; y += step) { const sy = Math.round(y * s + ed.view.oy) + 0.5; ctx.moveTo(0, sy); ctx.lineTo(W, sy); }
+    for (let i = Math.floor(gx0 / step); i * step <= gx1; i++) { const sx = Math.round(i * step * s + ed.view.ox) + 0.5; ctx.moveTo(sx, 0); ctx.lineTo(sx, H); }
+    for (let i = Math.floor(gy0 / step); i * step <= gy1; i++) { const sy = Math.round(i * step * s + ed.view.oy) + 0.5; ctx.moveTo(0, sy); ctx.lineTo(W, sy); }
     ctx.stroke(); ctx.globalAlpha = 1;
   }
 
