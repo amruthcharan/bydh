@@ -48,6 +48,7 @@ function setOpening(k, v) {
     else if (k === 'sill') op.sill = clamp(v, 0, S.value.wallH - op.h);
     else if (k === 'pos') op.t = clamp((v + op.w / 2) / L, op.w / 2 / L, 1 - op.w / 2 / L);
     else if (k === 'flip') op.flip = !op.flip;
+    else if (k === 'hinge') op.hingeEnd = !op.hingeEnd;
   });
 }
 
@@ -144,7 +145,7 @@ function startCalibrate() { ui.setTool('calibrate'); engines.editor?.resetCalibr
         <div v-if="o.type === 'window'" class="field"><label for="p-osill">Sill height</label><div class="inline"><input id="p-osill" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(o.sill, units)" @change="onLen($event, o.sill, (v) => setOpening('sill', v))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
         <div class="field"><label for="p-opos">From wall start</label><div class="inline"><input id="p-opos" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(o.t * wallLen(wall) - o.w / 2, units)" @change="onLen($event, o.t * wallLen(wall) - o.w / 2, (v) => setOpening('pos', v))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
       </div>
-      <div class="row"><button v-if="o.type === 'door'" class="btn" @click="setOpening('flip')">Flip swing</button></div>
+      <div v-if="o.type === 'door'" class="row"><button class="btn" @click="setOpening('hinge')">Swap hinge side</button><button class="btn" @click="setOpening('flip')">Open other way</button></div>
     </template>
 
     <!-- Room -->

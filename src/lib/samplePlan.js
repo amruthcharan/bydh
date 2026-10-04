@@ -23,7 +23,7 @@ export function samplePlan() {
   s.name = 'Sample · 3-bed bungalow';
   const W = (x1, y1, x2, y2) => { const w = { id: makeId('w'), x1, y1, x2, y2 }; s.walls.push(w); return w; };
   const O = (w, t, type, wd, extra = {}) =>
-    s.openings.push({ id: makeId('o'), wall: w.id, t, type, w: wd, h: type === 'door' ? 2.1 : 1.2, sill: 0.9, flip: false, ...extra });
+    s.openings.push({ id: makeId('o'), wall: w.id, t, type, w: wd, h: type === 'door' ? 2.1 : 1.2, sill: 0.9, flip: false, hingeEnd: false, ...extra });
   const R = (name, x, y, w, h, floor) => s.rooms.push({ id: makeId('r'), name, x, y, w, h, floor });
   const F = (sku, x, y, rot) => s.furniture.push({ id: makeId('f'), sku, x, y, rot, color: SKU[sku].colors[0] });
 

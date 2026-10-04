@@ -28,10 +28,11 @@ function buildWall(plan, w, parent, objMap) {
       box(og, 0.05, dh, T + 0.02, M.frame, a + 0.025, dh / 2, 0);
       box(og, 0.05, dh, T + 0.02, M.frame, b - 0.025, dh / 2, 0);
       box(og, b - a, 0.05, T + 0.02, M.frame, (a + b) / 2, dh - 0.025, 0);
-      const sd = p.o.flip ? -1 : 1, lw = b - a - 0.1, piv = new THREE.Group();
-      piv.position.set(a + 0.05, 0, sd * (T / 2 - 0.03)); piv.rotation.y = -sd * 1.4; og.add(piv);
-      box(piv, lw, dh - 0.06, 0.04, M.door, lw / 2, (dh - 0.06) / 2 + 0.01, 0);
-      box(piv, 0.12, 0.025, 0.06, M.steel, lw - 0.1, 1.0, 0).castShadow = false;
+      // The leaf runs along +x from a hinge at `a`, or along −x from a hinge at `b` (hingeEnd).
+      const sd = p.o.flip ? -1 : 1, dir = p.o.hingeEnd ? -1 : 1, lw = b - a - 0.1, piv = new THREE.Group();
+      piv.position.set(p.o.hingeEnd ? b - 0.05 : a + 0.05, 0, sd * (T / 2 - 0.03)); piv.rotation.y = -sd * dir * 1.4; og.add(piv);
+      box(piv, lw, dh - 0.06, 0.04, M.door, (dir * lw) / 2, (dh - 0.06) / 2 + 0.01, 0);
+      box(piv, 0.12, 0.025, 0.06, M.steel, dir * (lw - 0.1), 1.0, 0).castShadow = false;
     } else {
       const s = Math.min(p.o.sill, H - 0.3), wh = Math.min(p.o.h, H - s - 0.02), fd = T * 0.55;
       seg(a, b, 0, s); seg(a, b, s + wh, H);

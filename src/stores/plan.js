@@ -106,7 +106,7 @@ export const usePlanStore = defineStore('plan', () => {
     if (plan.value.openings.some((o) => o.wall === w.id && Math.abs(o.t * L - t * L) < (o.w + ow) / 2)) {
       return 'There is already an opening there. Pick a clear stretch of wall.';
     }
-    const o = { id: makeId('o'), wall: w.id, t, type, w: ow, h: type === 'door' ? 2.1 : 1.2, sill: 0.9, flip: false };
+    const o = { id: makeId('o'), wall: w.id, t, type, w: ow, h: type === 'door' ? 2.1 : 1.2, sill: 0.9, flip: false, hingeEnd: false };
     plan.value.openings.push(o); touch(); commit(); return o;
   }
   function addFurniture(sku, x, y, color) {

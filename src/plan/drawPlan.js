@@ -92,10 +92,12 @@ export function drawPlan(ed) {
     ctx.moveTo(B[0] + nx * hT, B[1] + ny * hT); ctx.lineTo(B[0] - nx * hT, B[1] - ny * hT);
     ctx.stroke();
     if (o.type === 'door') {
-      const sd = o.flip ? -1 : 1, r = o.w * s, hx = A[0] + nx * sd * hT, hy = A[1] + ny * sd * hT;
+      // flip: which side of the wall the leaf opens to. hingeEnd: hinge at the wall's end side (B) instead of its start side (A).
+      const sd = o.flip ? -1 : 1, hinge = o.hingeEnd ? B : A, dir = o.hingeEnd ? -1 : 1;
+      const r = o.w * s, hx = hinge[0] + nx * sd * hT, hy = hinge[1] + ny * sd * hT;
       ctx.lineWidth = isSel ? 2.2 : 1.6;
       ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + nx * sd * r, hy + ny * sd * r); ctx.stroke();
-      const a0 = Math.atan2(ny * sd, nx * sd), a1 = Math.atan2(uy, ux);
+      const a0 = Math.atan2(ny * sd, nx * sd), a1 = Math.atan2(uy * dir, ux * dir);
       let da = a1 - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
       ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(hx, hy, r, a0, a0 + da, da < 0); ctx.stroke(); ctx.setLineDash([]);
     } else {
