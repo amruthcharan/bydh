@@ -1,0 +1,37 @@
+/* Design tokens. Drafting-table palette: cool paper, graphite ink, verdigris accent.
+   Light values on :root, dark values for system-dark and explicit data-theme="dark". */
+:root {
+  --paper: #F1F3EF;
+  --panel: #FFFFFF;
+  --ink: #1C272E;
+  --muted: #5B676D;
+  --line: #D3D8D1;
+  --grid: #E2E6DF;
+  --grid-major: #C9D0C8;
+  --accent: #2D6C5F;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DDEBE6;
+  --sel: #D17A22;
+  --danger: #B4412F;
+  --shadow: 0 8px 28px rgba(15, 25, 30, .14);
+
+  --f-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --r: 6px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12181B; --panel: #1A2226; --ink: #E3E9E6; --muted: #90A0A3; --line: #2C373C;
+    --grid: #1B2427; --grid-major: #29353A; --accent: #5DB2A0; --accent-ink: #0B1412; --accent-soft: #1D3530;
+    --sel: #F0A04C; --danger: #E0745F; --shadow: 0 8px 28px rgba(0, 0, 0, .45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #12181B; --panel: #1A2226; --ink: #E3E9E6; --muted: #90A0A3; --line: #2C373C;
+  --grid: #1B2427; --grid-major: #29353A; --accent: #5DB2A0; --accent-ink: #0B1412; --accent-soft: #1D3530;
+  --sel: #F0A04C; --danger: #E0745F; --shadow: 0 8px 28px rgba(0, 0, 0, .45);
+  color-scheme: dark;
+}
