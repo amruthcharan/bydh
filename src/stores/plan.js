@@ -169,8 +169,30 @@ export const usePlanStore = defineStore('plan', () => {
     const u = plan.value.underlay; const measured = Math.hypot(p2.x - p1.x, p2.y - p1.y);
     if (!u || !(measured > 0) || !(real > 0)) return false;
     const k = real / measured;
-    u.mpp *= k; u.x = p1.x + (u.x - p1.x) * k; u.y = p1.y + (u.y - p1.y) * k;
+    u.mpp *= k; u.x = p1.x + (u.x - p1.x) * k; u.y = p1.y + (u.y - p1.y) * k; u.calibrated = true;
     touch(); commit(); return true;
+  }
+
+  /* ---------- detected from the tracing image ---------- */
+  /**
+   * Add detected walls, openings (which reference walls by index) and rooms as one undo step.
+   * `replace` first removes the walls, openings and rooms already on the plan.
+   */
+  function addDetected({ walls, openings = [], rooms = [], wallT }, { replace = false } = {}) {
+    const p = plan.value;
+    if (replace) { p.walls = []; p.openings = []; p.rooms = []; if (sel.value && sel.value.kind !== 'underlay' && sel.value.kind !== 'furniture') sel.value = null; }
+    if (wallT && !p.walls.length) p.settings.wallT = wallT;
+    const ids = walls.map(() => makeId('w'));
+    walls.forEach((w, i) => p.walls.push({ id: ids[i], x1: r2(w.x1), y1: r2(w.y1), x2: r2(w.x2), y2: r2(w.y2) }));
+    for (const o of openings) {
+      if (!ids[o.wall]) continue;
+      const door = o.type === 'door';
+      p.openings.push({ id: makeId('o'), wall: ids[o.wall], t: o.t, type: o.type, w: r2(o.w), h: door ? 2.1 : 1.2, sill: 0.9, flip: false, hingeEnd: false });
+    }
+    for (const r of rooms) {
+      p.rooms.push({ id: makeId('r'), name: `Room ${p.rooms.length + 1}`, x: r2(r.x), y: r2(r.y), w: r2(r.w), h: r2(r.h), floor: 'vitrified' });
+    }
+    touch(); commit();
   }
 
   return {
@@ -178,7 +200,7 @@ export const usePlanStore = defineStore('plan', () => {
     touch, commit, undo, redo, load, boot, find, select, wallById, nearestWall,
     carpetArea, footprint, shoppingList, furnitureTotal,
     addWall, addRoom, addOpening, addFurniture, deleteObj, rotateFurniture, duplicateFurniture,
-    setWallLength, splitWall, setUnderlay, calibrate,
+    setWallLength, splitWall, setUnderlay, calibrate, addDetected,
     newBlank: () => load(blankPlan()), loadSample: () => load(samplePlan()),
   };
 });

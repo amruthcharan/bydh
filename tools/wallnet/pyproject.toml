@@ -1,0 +1,13 @@
+[project]
+name = "wallnet"
+version = "0.1.0"
+description = "Trains BYDH's wall-segmentation model on generated floor plans and exports it to ONNX."
+requires-python = ">=3.10"
+dependencies = [
+  "torch>=2.4",
+  "numpy",
+  "opencv-python-headless",
+  "onnx",
+  "onnxruntime",
+  "onnxscript",
+]

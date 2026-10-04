@@ -4,7 +4,7 @@ import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
 export default [
-  { ignores: ['dist/', 'node_modules/'] },
+  { ignores: ['dist/', 'node_modules/', 'tools/**/.venv/', 'tools/**/runs/'] },
   js.configs.recommended,
   ...vue.configs['flat/essential'],
   {
@@ -16,6 +16,6 @@ export default [
   },
   // Builders keep the (group, item, material) signature even when they ignore an argument.
   { files: ['src/three/furniture/**'], rules: { 'no-unused-vars': ['error', { args: 'none' }] } },
-  { files: ['*.config.js'], languageOptions: { globals: { ...globals.node } } },
+  { files: ['*.config.js', 'tools/**/*.mjs'], languageOptions: { globals: { ...globals.node } } },
   prettier,
 ];

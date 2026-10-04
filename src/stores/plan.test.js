@@ -215,9 +215,71 @@ describe('calibrate', () => {
     expect(store.rev).toBe(rev);
   });
 
+  it('marks the image as calibrated', () => {
+    expect(store.plan.underlay.calibrated).toBeFalsy();
+    store.calibrate({ x: 1, y: 1 }, { x: 3, y: 1 }, 4);
+    expect(store.plan.underlay.calibrated).toBe(true);
+  });
+
   it('refuses without an image', () => {
     store.load(blankPlan());
     expect(store.calibrate({ x: 0, y: 0 }, { x: 1, y: 0 }, 1)).toBe(false);
+  });
+});
+
+describe('addDetected', () => {
+  const found = {
+    walls: [
+      { x1: 0, y1: 0, x2: 4.004, y2: 0 },
+      { x1: 4.004, y1: 0, x2: 4.004, y2: 3 },
+    ],
+    openings: [
+      { wall: 0, t: 0.5, w: 0.9, type: 'door' },
+      { wall: 1, t: 0.5, w: 1.5, type: 'window' },
+      { wall: 7, t: 0.5, w: 1, type: 'door' },
+    ],
+    rooms: [{ x: 0, y: 0, w: 4, h: 3 }],
+    wallT: 0.15,
+  };
+
+  it('adds everything as one undo step', () => {
+    store.addDetected(found);
+    expect(walls()).toHaveLength(2);
+    expect(store.plan.rooms).toEqual([{ id: expect.any(String), name: 'Room 1', x: 0, y: 0, w: 4, h: 3, floor: 'vitrified' }]);
+    store.undo();
+    expect(walls()).toHaveLength(0);
+    expect(store.plan.rooms).toHaveLength(0);
+  });
+
+  it('rounds to centimetres and keeps shared corners joined', () => {
+    store.addDetected(found);
+    const [a, b] = walls();
+    expect([a.x2, a.y2]).toEqual([4, 0]);
+    expect([b.x1, b.y1]).toEqual([a.x2, a.y2]);
+  });
+
+  it('links openings to their walls and skips ones with no wall', () => {
+    store.addDetected(found);
+    const [a, b] = walls();
+    expect(store.plan.openings).toHaveLength(2);
+    expect(store.plan.openings[0]).toMatchObject({ wall: a.id, type: 'door', h: 2.1 });
+    expect(store.plan.openings[1]).toMatchObject({ wall: b.id, type: 'window', h: 1.2, sill: 0.9 });
+  });
+
+  it('sets the wall thickness only on an empty plan', () => {
+    store.addDetected(found);
+    expect(store.plan.settings.wallT).toBe(0.15);
+    store.addDetected({ ...found, wallT: 0.3 });
+    expect(store.plan.settings.wallT).toBe(0.15);
+  });
+
+  it('adds alongside existing walls, or replaces them', () => {
+    store.addRoom(10, 10, 12, 12);
+    store.addDetected(found);
+    expect(walls()).toHaveLength(6);
+    store.addDetected(found, { replace: true });
+    expect(walls()).toHaveLength(2);
+    expect(store.plan.rooms).toHaveLength(1);
   });
 });
 

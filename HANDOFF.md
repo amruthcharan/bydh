@@ -10,6 +10,7 @@ Status as of 4 Oct 2026. `npm run build` passes, and the flows below were checke
 - Image import, scale calibration (two clicks plus a length in m or ft), opacity, lock, and show-in-3D for the tracing image.
 - Orbit, Walk (with collisions; doors are passable) and Cardboard modes.
 - GLB and USDZ export both download.
+- Find walls and rooms: the wall model downloads into Cache Storage, runs in a worker and adds walls, doors, windows and rooms as one undo step. Checked on generated plans (see README) and one real 3BHK plan in headless Chrome.
 - Phone layout at 400 px has no horizontal overflow; the properties panel starts folded.
 
 ## Not verified (needs real hardware or a real host)
@@ -27,12 +28,13 @@ Status as of 4 Oct 2026. `npm run build` passes, and the flows below were checke
 6. One floor only. There are no stairs, ceilings or roof.
 7. Plan files can get large when a big tracing image is embedded.
 8. Catalogue prices and finishes are placeholders and hard-coded.
+9. Wall detection has been checked on one real plan only. It does not read room names or printed dimensions, only finds rectangular rooms, and can mistake a ventilator for a door or a sliding door for a window. Scale must be set first.
 
 ## Suggested next steps (in priority order)
 1. ~~Add Vitest unit tests, ESLint and Prettier.~~ Done: `npm test`, `npm run lint`.
 2. **Incremental 3D updates:** rebuild only the changed wall or item (diff by id) instead of the whole house.
 3. **Overlap warnings:** show furniture that intersects other furniture or walls in red on the plan.
-4. **Polygon rooms:** detect enclosed regions from the wall graph so floors and areas follow any wall shape.
+4. **Polygon rooms:** (detection already skips non-rectangular spaces and says so) detect enclosed regions from the wall graph so floors and areas follow any wall shape.
 5. **Clearance and Vastu overlays (optional toggles):** door-swing clearance, walkway widths, and room placement by direction using `settings.north`.
 6. **Multiple floors:** levels, stairs, ceiling and a simple roof.
 7. **Catalogue from JSON:** load items from `public/catalog.json` so non-developers can edit them. Allow custom GLB models per item.

@@ -7,7 +7,11 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 export default defineConfig(({ mode }) => ({
   base: './',
   plugins: [vue(), ...(mode === 'https' ? [basicSsl()] : [])],
-  server: { host: true },
+  // tools/ holds the Python training environment; watching it slows the dev server to a crawl.
+  server: { host: true, watch: { ignored: ['**/tools/**'] } },
+  // Module workers, so the detection worker can lazy-load the ONNX runtime.
+  worker: { format: 'es' },
+  test: { exclude: ['**/node_modules/**', 'tools/**'] },
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 1500,

@@ -25,6 +25,7 @@ Vue 3 (`<script setup>`, plain JS, no TypeScript), Pinia, three.js r186 (OrbitCo
   - `Viewport` (`src/three/Viewport.js`) owns the renderer, camera modes, picking, XR and export. It rebuilds the whole house from the plan on each `rev` change (one rebuild per animation frame).
 - **`src/lib/walker.js`** is deliberately non-reactive shared state for the walk camera. The 3D view writes it every frame and the plan draws the marker from it. Don't put it in Pinia.
 - **UI state** (current tool, dialogs, view mode, toasts) lives in `src/stores/ui.js`.
+- **Wall detection** (`src/detect/`): `run.js` resamples the tracing image to about 2.5 cm/px, a worker builds a wall mask (the ONNX model or `mask.js`) and `vectorize.js` turns it into walls, openings and rooms in image metres; `place.js` maps them onto the plan and `store.addDetected()` adds them as one undo step. `vectorize.js` and `mask.js` are pure and unit-tested. The model is trained in `tools/wallnet/` on generated plans; measure changes to tracing with `tools/wallnet/eval.mjs`, not by eye.
 
 ## Conventions
 - **Furniture item front faces +z** in model space. The origin is the footprint centre at floor level. Plan rotation `rot` is in degrees, and the 3D group gets `rotation.y = -rad(rot)`. Wall snapping (`src/lib/snapping.js`) relies on this convention.
@@ -41,4 +42,6 @@ Vue 3 (`<script setup>`, plain JS, no TypeScript), Pinia, three.js r186 (OrbitCo
 - Room creation adds four walls but skips any edge that an existing collinear wall already covers (`wallCovers`).
 - The tracing image (`plan.underlay`) is stored as a JPEG data URL inside the plan, which is why autosave uses IndexedDB rather than localStorage. Large images make plan files big.
 - `three/examples/jsm/...` imports are the supported path for addons in r186.
+- The model and the ORT `.wasm` are cached in Cache Storage under `bydh-models-v1`. Changing the model file means a new file name and a new cache name, or devices keep the old one.
+- `plan.underlay.calibrated` is set by `calibrate()`. Detection warns without it because the model expects real-world scale.
 - The pdf.js worker is imported with `?url`. Don't force pdfjs into a manual chunk: that makes it preload on start-up.

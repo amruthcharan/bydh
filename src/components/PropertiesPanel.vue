@@ -6,6 +6,7 @@ import { SKU, FLOORS, WALL_TYPES, CATEGORIES } from '../catalog/items.js';
 import { clamp, wallLen } from '../lib/geometry.js';
 import { fmtArea, fmtHour, fmtINR, fmtLen, fmtSize, lenInput, parseLen } from '../lib/units.js';
 import { engines } from '../lib/engines.js';
+import DetectPanel from './DetectPanel.vue';
 
 const plan = usePlanStore();
 const ui = useUiStore();
@@ -192,6 +193,7 @@ function startCalibrate() { ui.setTool('calibrate'); engines.editor?.resetCalibr
         <div class="field"><label for="p-u3d">Show in 3D</label><input id="p-u3d" type="checkbox" :checked="o.show3D" @change="set(() => { o.show3D = $event.target.checked; })" /></div>
       </div>
       <div class="row"><button class="btn" @click="ui.importOpen = true">Replace image</button></div>
+      <DetectPanel @calibrate="startCalibrate" />
     </template>
 
     <div v-if="o" class="row"><button class="btn danger" @click="plan.deleteObj(plan.sel)">{{ kind === 'underlay' ? 'Remove image' : 'Delete' }}</button><button class="btn" @click="plan.select(null)">Done</button></div>
