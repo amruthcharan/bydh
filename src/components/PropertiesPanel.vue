@@ -3,8 +3,8 @@ import { computed, ref, watch } from 'vue';
 import { usePlanStore } from '../stores/plan.js';
 import { useUiStore } from '../stores/ui.js';
 import { SKU, FLOORS, WALL_TYPES, CATEGORIES } from '../catalog/items.js';
-import { clamp, r2, wallLen } from '../lib/geometry.js';
-import { fmtArea, fmtHour, fmtINR, fmtLen } from '../lib/units.js';
+import { clamp, wallLen } from '../lib/geometry.js';
+import { fmtArea, fmtHour, fmtINR, fmtLen, fmtSize, lenInput, parseLen } from '../lib/units.js';
 import { engines } from '../lib/engines.js';
 
 const plan = usePlanStore();
@@ -24,12 +24,19 @@ const catLabel = (id) => CATEGORIES.find((c) => c.id === id)?.label || id;
 // Apply a change, rebuild, and record it in history on commit (change events).
 function set(fn, commit = true) { fn(); plan.touch(); if (commit) plan.commit(); }
 const num = (e) => parseFloat(e.target.value);
+/** Read a length field in the plan's units and pass metres to `apply`. Puts `old` back if the text can't be read. */
+function onLen(e, old, apply) {
+  const v = parseLen(e.target.value, units.value);
+  if (Number.isFinite(v)) { apply(v); return; }
+  ui.toast(units.value === 'ft' ? `Enter a length such as 12'6" or 12.5 (feet).` : 'Enter a length in metres, such as 3.8.');
+  e.target.value = lenInput(old, units.value);
+}
 
 /* settings */
 const setSetting = (k, v, commit = true) => set(() => { S.value[k] = v; }, commit);
 
 /* wall */
-function setWallLen(e) { const v = num(e); if (v > 0) { plan.setWallLength(o.value, v); plan.commit(); } }
+function setWallLen(v) { if (v > 0) { plan.setWallLength(o.value, v); plan.commit(); } }
 
 /* opening */
 function setOpening(k, v) {
@@ -92,9 +99,9 @@ function startCalibrate() { ui.setTool('calibrate'); engines.editor?.resetCalibr
 
       <div class="group">
         <div class="eyebrow">Construction</div>
-        <div class="field"><label for="p-wallH">Wall height</label><div class="inline"><input id="p-wallH" type="number" step="0.1" min="2.4" max="4.5" :value="S.wallH" @change="setSetting('wallH', clamp(num($event) || 3, 2.4, 4.5))" /><span class="unit">m</span></div></div>
+        <div class="field"><label for="p-wallH">Wall height</label><div class="inline"><input id="p-wallH" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(S.wallH, units)" @change="onLen($event, S.wallH, (v) => setSetting('wallH', clamp(v, 2.4, 4.5)))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
         <div class="field"><label for="p-wallT">Wall type</label><select id="p-wallT" :value="S.wallT" @change="setSetting('wallT', +$event.target.value)"><option v-for="w in WALL_TYPES" :key="w.v" :value="w.v">{{ w.l }}</option></select></div>
-        <div class="field"><label for="p-units">Units</label><select id="p-units" :value="S.units" @change="setSetting('units', $event.target.value)"><option value="m">Metres · m²</option><option value="ft">Feet · sq ft</option></select></div>
+        <div class="field"><label for="p-units">Units</label><select id="p-units" :value="S.units" @change="setSetting('units', $event.target.value)"><option value="ft">Feet &amp; inches · sq ft</option><option value="m">Metres · m²</option></select></div>
       </div>
 
       <div class="group">
@@ -117,7 +124,7 @@ function startCalibrate() { ui.setTool('calibrate'); engines.editor?.resetCalibr
     <template v-else-if="kind === 'wall'">
       <div class="group"><div class="eyebrow">Wall</div><h2>{{ fmtLen(wallLen(o), units) }} wall</h2></div>
       <div class="group">
-        <div class="field"><label for="p-len">Length</label><div class="inline"><input id="p-len" type="number" step="0.05" min="0.25" :value="r2(wallLen(o))" @change="setWallLen" /><span class="unit">m</span></div></div>
+        <div class="field"><label for="p-len">Length</label><div class="inline"><input id="p-len" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(wallLen(o), units)" @change="onLen($event, wallLen(o), setWallLen)" /><span v-if="units === 'm'" class="unit">m</span></div></div>
         <div class="field"><label>Openings</label><span class="readout">{{ P.openings.filter(x => x.wall === o.id && x.type === 'door').length }} doors · {{ P.openings.filter(x => x.wall === o.id && x.type === 'window').length }} windows</span></div>
       </div>
       <div class="row">
@@ -132,10 +139,10 @@ function startCalibrate() { ui.setTool('calibrate'); engines.editor?.resetCalibr
       <div class="group"><div class="eyebrow">{{ o.type === 'door' ? 'Door' : 'Window' }}</div><h2>{{ o.type === 'door' ? 'Door' : 'Window' }} · {{ fmtLen(o.w, units) }}</h2></div>
       <div class="group">
         <div class="field"><label for="p-otype">Type</label><select id="p-otype" :value="o.type" @change="setOpening('type', $event.target.value)"><option value="door">Door</option><option value="window">Window</option></select></div>
-        <div class="field"><label for="p-ow">Width</label><div class="inline"><input id="p-ow" type="number" step="0.05" :value="r2(o.w)" @change="setOpening('w', num($event))" /><span class="unit">m</span></div></div>
-        <div class="field"><label for="p-oh">Height</label><div class="inline"><input id="p-oh" type="number" step="0.05" :value="r2(o.h)" @change="setOpening('h', num($event))" /><span class="unit">m</span></div></div>
-        <div v-if="o.type === 'window'" class="field"><label for="p-osill">Sill height</label><div class="inline"><input id="p-osill" type="number" step="0.05" :value="r2(o.sill)" @change="setOpening('sill', num($event))" /><span class="unit">m</span></div></div>
-        <div class="field"><label for="p-opos">From wall start</label><div class="inline"><input id="p-opos" type="number" step="0.05" :value="r2(o.t * wallLen(wall) - o.w / 2)" @change="setOpening('pos', num($event))" /><span class="unit">m</span></div></div>
+        <div class="field"><label for="p-ow">Width</label><div class="inline"><input id="p-ow" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(o.w, units)" @change="onLen($event, o.w, (v) => setOpening('w', v))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
+        <div class="field"><label for="p-oh">Height</label><div class="inline"><input id="p-oh" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(o.h, units)" @change="onLen($event, o.h, (v) => setOpening('h', v))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
+        <div v-if="o.type === 'window'" class="field"><label for="p-osill">Sill height</label><div class="inline"><input id="p-osill" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(o.sill, units)" @change="onLen($event, o.sill, (v) => setOpening('sill', v))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
+        <div class="field"><label for="p-opos">From wall start</label><div class="inline"><input id="p-opos" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(o.t * wallLen(wall) - o.w / 2, units)" @change="onLen($event, o.t * wallLen(wall) - o.w / 2, (v) => setOpening('pos', v))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
       </div>
       <div class="row"><button v-if="o.type === 'door'" class="btn" @click="setOpening('flip')">Flip swing</button></div>
     </template>
@@ -146,22 +153,22 @@ function startCalibrate() { ui.setTool('calibrate'); engines.editor?.resetCalibr
       <div class="group">
         <div class="field"><label for="p-rname">Name</label><input id="p-rname" type="text" :value="o.name" @input="set(() => { o.name = $event.target.value || 'Room'; }, false)" @change="plan.commit()" /></div>
         <div class="field"><label for="p-rfloor">Floor</label><select id="p-rfloor" :value="o.floor" @change="set(() => { o.floor = $event.target.value; })"><option v-for="(f, k) in FLOORS" :key="k" :value="k">{{ f.label }}</option></select></div>
-        <div class="field"><label for="p-rw">Width</label><div class="inline"><input id="p-rw" type="number" step="0.05" :value="r2(o.w)" @change="set(() => { o.w = clamp(num($event), 0.5, 60); })" /><span class="unit">m</span></div></div>
-        <div class="field"><label for="p-rh">Depth</label><div class="inline"><input id="p-rh" type="number" step="0.05" :value="r2(o.h)" @change="set(() => { o.h = clamp(num($event), 0.5, 60); })" /><span class="unit">m</span></div></div>
+        <div class="field"><label for="p-rw">Width</label><div class="inline"><input id="p-rw" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(o.w, units)" @change="onLen($event, o.w, (v) => set(() => { o.w = clamp(v, 0.5, 60); }))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
+        <div class="field"><label for="p-rh">Depth</label><div class="inline"><input id="p-rh" type="text" class="len" autocomplete="off" spellcheck="false" :value="lenInput(o.h, units)" @change="onLen($event, o.h, (v) => set(() => { o.h = clamp(v, 0.5, 60); }))" /><span v-if="units === 'm'" class="unit">m</span></div></div>
       </div>
     </template>
 
     <!-- Furniture -->
     <template v-else-if="kind === 'furniture' && item">
       <div class="group"><div class="eyebrow">{{ catLabel(item.category) }} · {{ item.sku }}</div><h2>{{ item.name }}</h2>
-        <span class="readout">{{ Math.round(item.w * 100) }} × {{ Math.round(item.d * 100) }} × {{ Math.round(item.h * 100) }} cm · {{ fmtINR(item.price) }}</span></div>
+        <span class="readout">{{ fmtSize(item, units) }} · {{ fmtINR(item.price) }}</span></div>
       <div class="group">
         <div class="field"><label>Finish</label>
           <div class="swatches"><button v-for="c in item.colors" :key="c" :aria-label="`Finish ${c}`" :aria-pressed="o.color === c" :style="{ background: c }" @click="set(() => { o.color = c; })"></button></div>
         </div>
         <div class="field"><label for="p-fcol">Custom colour</label><input id="p-fcol" type="color" :value="o.color" @input="set(() => { o.color = $event.target.value; }, false)" @change="plan.commit()" /></div>
         <div class="field"><label for="p-frot">Rotation</label><div class="inline"><input id="p-frot" type="number" step="15" :value="o.rot" @change="set(() => { o.rot = ((num($event) % 360) + 360) % 360; })" /><span class="unit">°</span></div></div>
-        <div class="field"><label>Position</label><span class="readout">{{ o.x.toFixed(2) }}, {{ o.y.toFixed(2) }}</span></div>
+        <div class="field"><label>Position</label><span class="readout">{{ fmtLen(o.x, units) }}, {{ fmtLen(o.y, units) }}</span></div>
       </div>
       <div class="row">
         <button class="btn" @click="plan.rotateFurniture(o, -90)">↺ 90°</button>
@@ -173,7 +180,7 @@ function startCalibrate() { ui.setTool('calibrate'); engines.editor?.resetCalibr
     <!-- Tracing image -->
     <template v-else-if="kind === 'underlay'">
       <div class="group"><div class="eyebrow">Tracing image</div><h2>Imported plan</h2>
-        <span class="readout">{{ fmtLen(o.w * o.mpp, units) }} × {{ fmtLen(o.h * o.mpp, units) }} · {{ (1 / o.mpp / 100).toFixed(2) }} px/cm</span></div>
+        <span class="readout">{{ fmtLen(o.w * o.mpp, units) }} × {{ fmtLen(o.h * o.mpp, units) }} · {{ units === 'ft' ? `${(0.0254 / o.mpp).toFixed(1)} px/in` : `${(0.01 / o.mpp).toFixed(2)} px/cm` }}</span></div>
       <p class="muted">Set the scale first: click both ends of a dimension printed on the drawing and type its length. Then lock the image and trace walls over it.</p>
       <div class="row"><button class="btn primary" @click="startCalibrate">Set scale</button></div>
       <div class="group">
@@ -211,6 +218,7 @@ h2 { margin: 0; font: 600 22px/1.1 var(--f-display); letter-spacing: .02em; text
 .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
 .swatches button { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); padding: 0; }
 .swatches button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--accent); }
+.field input.len { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 input[type=color] { width: 44px; height: 28px; border: 1px solid var(--line); border-radius: var(--r); padding: 2px; background: var(--paper); }
 input[type=checkbox] { justify-self: start; width: 16px; height: 16px; accent-color: var(--accent); }
 

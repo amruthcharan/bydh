@@ -4,7 +4,7 @@ import { usePlanStore } from '../stores/plan.js';
 import { useUiStore } from '../stores/ui.js';
 import { PlanEditor } from '../plan/PlanEditor.js';
 import { engines } from '../lib/engines.js';
-import { fmtArea, fmtINR } from '../lib/units.js';
+import { fmtArea, fmtINR, fmtLen, parseLen } from '../lib/units.js';
 import { SKU } from '../catalog/items.js';
 import FurnitureStore from './FurnitureStore.vue';
 
@@ -14,7 +14,9 @@ const canvas = ref(null);
 const drafting = ref(false);
 const cursor = ref('');
 const calibLen = ref('');
-const calibUnit = ref('m');
+const calibUnit = ref('ft');
+const units = computed(() => plan.plan.settings.units);
+const FT_EXAMPLE = `e.g. 12'6"`;
 const calibInput = ref(null);
 const dropActive = ref(false);
 let editor;
@@ -22,7 +24,7 @@ let editor;
 onMounted(() => {
   editor = new PlanEditor(canvas.value, plan, ui, {
     onDraft: (v) => { drafting.value = v; },
-    onCursor: (x, y) => { cursor.value = `x ${x.toFixed(2)}  y ${y.toFixed(2)}`; },
+    onCursor: (x, y) => { cursor.value = `x ${fmtLen(x, units.value)}  y ${fmtLen(y, units.value)}`; },
   });
   engines.editor = editor;
 });
@@ -35,12 +37,12 @@ watch(() => ui.tool, (t) => {
   if (t !== 'calibrate') editor.resetCalibration();
   canvas.value.style.cursor = t === 'select' ? 'default' : t === 'erase' ? 'not-allowed' : 'crosshair';
 });
-watch(() => ui.calib, async (c) => { if (c) { calibLen.value = ''; await nextTick(); calibInput.value?.focus(); } });
+watch(() => ui.calib, async (c) => { if (c) { calibLen.value = ''; calibUnit.value = units.value; await nextTick(); calibInput.value?.focus(); } });
 
 const hint = computed(() => {
   switch (ui.tool) {
     case 'select': return 'Drag to move · drag a wall end to reshape · drag empty space to pan';
-    case 'wall': return drafting.value ? 'Click the next corner · double-click or Esc to finish' : 'Click to start a wall · corners snap to the 25 cm grid';
+    case 'wall': return drafting.value ? 'Click the next corner · double-click or Esc to finish' : `Click to start a wall · corners snap to the ${units.value === 'ft' ? '9¾″ (25 cm)' : '25 cm'} grid`;
     case 'room': return 'Drag a rectangle to add a room with its four walls';
     case 'door': return 'Click a wall to add a door';
     case 'window': return 'Click a wall to add a window';
@@ -52,9 +54,8 @@ const hint = computed(() => {
 });
 
 function applyCalibration() {
-  const v = parseFloat(calibLen.value);
-  if (!(v > 0)) { ui.toast('Enter the length as a number, for example 3.66 or 12.'); return; }
-  const metres = calibUnit.value === 'ft' ? v * 0.3048 : v;
+  const metres = parseLen(calibLen.value, calibUnit.value);
+  if (!(metres > 0)) { ui.toast(`Enter the length, for example 12'6" or 12.5 in feet, or 3.81 in metres.`); return; }
   if (plan.calibrate(ui.calib.p1, ui.calib.p2, metres)) {
     ui.setTool('select'); plan.select({ kind: 'underlay', id: 'underlay' });
     ui.toast('Scale set. Lock the image, then trace walls over it.');
@@ -92,8 +93,8 @@ function onDrop(e) {
     <form v-if="ui.tool === 'calibrate' && ui.calib" class="calib" @submit.prevent="applyCalibration">
       <label for="calibLen">Real length of that line</label>
       <div class="row">
-        <input id="calibLen" ref="calibInput" v-model="calibLen" type="number" step="0.01" min="0" placeholder="e.g. 3.66" />
-        <select id="calibUnit" v-model="calibUnit" aria-label="Unit"><option value="m">m</option><option value="ft">ft</option></select>
+        <input id="calibLen" ref="calibInput" v-model="calibLen" type="text" autocomplete="off" spellcheck="false" :placeholder="calibUnit === 'ft' ? FT_EXAMPLE : 'e.g. 3.81'" />
+        <select id="calibUnit" v-model="calibUnit" aria-label="Unit"><option value="ft">ft</option><option value="m">m</option></select>
         <button class="btn primary" type="submit">Set scale</button>
         <button class="btn" type="button" @click="cancelCalibration">Cancel</button>
       </div>

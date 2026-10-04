@@ -1,11 +1,13 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import { thumbnail } from '../three/thumbnails.js';
-import { fmtINR } from '../lib/units.js';
+import { fmtINR, fmtSize } from '../lib/units.js';
+import { usePlanStore } from '../stores/plan.js';
 import { useUiStore } from '../stores/ui.js';
 
 const props = defineProps({ item: { type: Object, required: true } });
 const ui = useUiStore();
+const plan = usePlanStore();
 const color = ref(props.item.colors[0]);
 const src = ref('');
 const card = ref(null);
@@ -24,7 +26,6 @@ function onDragStart(e) {
   e.dataTransfer.setData('text/x-bydh-sku', JSON.stringify({ sku: props.item.sku, color: color.value }));
   e.dataTransfer.effectAllowed = 'copy';
 }
-const dims = (i) => `${Math.round(i.w * 100)} × ${Math.round(i.d * 100)} × ${Math.round(i.h * 100)} cm`;
 </script>
 
 <template>
@@ -36,7 +37,7 @@ const dims = (i) => `${Math.round(i.w * 100)} × ${Math.round(i.d * 100)} × ${M
     </div>
     <div class="body">
       <h3>{{ item.name }}</h3>
-      <div class="dims">{{ dims(item) }}</div>
+      <div class="dims">{{ fmtSize(item, plan.plan.settings.units) }}</div>
       <div v-if="item.colors.length > 1" class="swatches" role="radiogroup" :aria-label="`${item.name} finish`">
         <button v-for="c in item.colors" :key="c" role="radio" :aria-checked="color === c" :aria-label="`Finish ${c}`" :style="{ background: c }" @click="color = c"></button>
       </div>

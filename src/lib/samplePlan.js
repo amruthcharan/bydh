@@ -1,7 +1,7 @@
 import { makeId } from './geometry.js';
 import { SKU } from '../catalog/items.js';
 
-export const DEFAULT_SETTINGS = { wallH: 3.0, wallT: 0.23, north: 0, sun: 10, units: 'm' };
+export const DEFAULT_SETTINGS = { wallH: 3.0, wallT: 0.23, north: 0, sun: 10, units: 'ft' };
 
 export function blankPlan() {
   return { version: 2, name: 'Untitled home', walls: [], openings: [], rooms: [], furniture: [], underlay: null, settings: { ...DEFAULT_SETTINGS } };
